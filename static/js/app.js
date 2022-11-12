@@ -15,35 +15,19 @@ function init() {
     demoInfo(data.metadata, data.names[0]);
     ids(data.names);
     addBarChart(data.samples, data.names[0]);
+    addBubbleChart(data.samples, data.names[0]);
   });
 }
 //--------------------------------------------------------------//
+
+
 
 //------------------------------Function to add Bar Chart--------------------------------//
 
 function addBarChart(data, id) {
   
-  // Initialize empty arrays 
-  let sample_value = [];
-  let otu_id = [];
-  let otu_label = [];
-  let sampleObjects = [];
-
-  // Looping through data to find the id that matches
-  for (let i = 0; i < data.length; i++) {
-    if (data[i].id == id){
-
-      // store id's data in dedicated arrays
-      sample_value  = data[i].sample_values;
-      otu_id = data[i].otu_ids;
-      otu_label = data[i].otu_labels;
-
-      // Loop through the arrays and create objects for each iteration
-      for (let j = 0; j < sample_value.length; j++) {
-        sampleObjects[j] = {sample_values: sample_value[j], otu_ids: `OTU ${otu_id[j]}`, otu_labels: otu_label[j]};
-      }
-    };
-  };
+// Collect sample data using id
+let sampleObjects = collectSampleData(data, id);
 
 // Sort the data by sample_values descending
 let sortedBysampleObjects = sampleObjects.sort((a, b) => 
@@ -83,6 +67,48 @@ Plotly.newPlot("bar", traceBarData, layout);
 }
 //--------------------------------------------------------------//
 
+
+
+//---------------------------------Function to add Bubble Chart-----------------------------//
+
+function addBubbleChart(data, id) {
+  
+  // Collect sample data using id
+  let sampleObjects = collectSampleDataNum(data, id);
+
+  console.log(sampleObjects)
+
+  // Trace for the Sample Data
+let traceBubble = {
+  type: "scatter",
+  mode: "markers",
+  x: sampleObjects.map(object => object.otu_ids),
+  y: sampleObjects.map(object => object.sample_values),
+  text: sampleObjects.map(object => object.otu_labels),
+  marker: {
+    size: sampleObjects.map(object => object.sample_values*20),
+    sizemode: 'area',
+    color: sampleObjects.map(object => object.otu_ids),
+    colorscale: [[0, 'rgb(0, 0, 255)'], [0.5, 'rgb(0, 255, 0)'], [1, 'rgb(255, 0, 0)']]
+  }  
+  
+};
+
+
+let traceBubbleData = [traceBubble];
+
+// Apply a title to the layout
+let layout = {
+title: 'All OTUs Found in Individuals',
+xaxis: {title:'OTU ID'}
+};
+
+Plotly.newPlot("bubble", traceBubbleData, layout);
+}
+//--------------------------------------------------------------//
+
+
+
 //-----------------------------Function to populate the option list of Id's---------------------------------//
 
 function ids(data) {
@@ -96,26 +122,22 @@ function ids(data) {
 }
 //--------------------------------------------------------------//
 
-//-----------------------------Function to be run when id has been changed---------------------------------//
+
+
+//-----------------------------Function to be run when id has been changed and run functions using new id----------------------------------//
   
  function optionChanged(id) {
-  mainFunction(id);
- };
-//--------------------------------------------------------------//
- 
 
-
-//-----------------------------Function to collect the new id and run functions using new id---------------------------------//
-
-function mainFunction(id){
   let currentId = id
 
   // Fetch the JSON data using url and run applicable functions                 Uncomment when going live
     d3.json(url).then(function(data) {
     demoInfo(data.metadata, currentId);
-    updateBarChart(data.samples, currentId);});
-};
+    updateBarChart(data.samples, currentId);
+    updateBubbleChart(data.samples, currentId);});
+ };
 //--------------------------------------------------------------//
+ 
 
 
   // // Fetch the Json data using samples.json         DELETE WHEN GOING LIVE
@@ -160,27 +182,8 @@ function demoInfo(data, id){
 
 function updateBarChart(data, id) {
 
-  // Initialize empty arrays 
-  let sample_value = [];
-  let otu_id = [];
-  let otu_label = [];
-  let sampleObjects = [];
-
-  // Looping through data to find the id that matches
-  for (let i = 0; i < data.length; i++) {
-    if (data[i].id == id){
-
-      // store id's data in dedicated arrays
-      sample_value  = data[i].sample_values;
-      otu_id = data[i].otu_ids;
-      otu_label = data[i].otu_labels;
-
-      // Loop through the arrays and create objects for each iteration
-      for (let j = 0; j < sample_value.length; j++) {
-        sampleObjects[j] = {sample_values: sample_value[j], otu_ids: `OTU ${otu_id[j]}`, otu_labels: otu_label[j]};
-      }
-    };
-  };
+// Collect sample data using id
+let sampleObjects = collectSampleData(data, id);
 
 // Sort the data by sample_values descending
 let sortedBysampleObjects = sampleObjects.sort((a, b) => 
@@ -205,15 +208,95 @@ Plotly.restyle("bar", 'text', [text]);
 //--------------------------------------------------------------//
 
 
-//---------------------------------Function to add/update Bubble Chart-----------------------------//
+
+//---------------------------------Function to update Bubble Chart-----------------------------//
+
+function updateBubbleChart(data, id) {
+  
+  // Collect sample data using id
+  let sampleObjects = collectSampleDataNum(data, id);
 
 
-  // using all data
-  // create bubble variables, xValueBubble = otu_ids, yValuesBubble = sample_values, markerSizeBubble = sample_values, markercoloursBubble = otu_ids, textValuesBubble = otu_labels
-  // Create tracebar = 
+  // Trace for the Sample Data
+
+let x = sampleObjects.map(object => object.otu_ids);
+let y = sampleObjects.map(object => object.sample_values);
+let text = sampleObjects.map(object => object.otu_labels);
+let marker = {
+  size: sampleObjects.map(object => object.sample_values*20),
+  sizemode: 'area',
+  color: sampleObjects.map(object => object.otu_ids),
+  colorscale: [[0, 'rgb(0, 0, 255)'], [0.5, 'rgb(0, 255, 0)'], [1, 'rgb(255, 0, 0)']]
+}  
+
+
+
+// Update/resyle bubble chart with new data
+Plotly.restyle("bubble", 'x', [x]);
+Plotly.restyle("bubble", 'y', [y]);
+Plotly.restyle("bubble", 'text', [text]);
+Plotly.restyle("bubble", 'marker', [marker]);
+}
 //--------------------------------------------------------------//
 
 
 
+//---------------------------------Function to Collect and Return sample data -  With STRING OTU ID's-----------------------------//
+
+ function collectSampleData(data, id) {
+  // Initialize empty arrays 
+  let sample_value = [];
+  let otu_id = [];
+  let otu_label = [];
+  let sampleObjects = [];
+
+  // Looping through data to find the id that matches
+  for (let i = 0; i < data.length; i++) {
+    if (data[i].id == id){
+
+      // store id's data in dedicated arrays
+      sample_value  = data[i].sample_values;
+      otu_id = data[i].otu_ids;
+      otu_label = data[i].otu_labels;
+
+      // Loop through the arrays and create objects for each iteration
+      for (let j = 0; j < sample_value.length; j++) {
+        sampleObjects[j] = {sample_values: sample_value[j], otu_ids: `OTU ${otu_id[j]}`, otu_labels: otu_label[j]};
+      }
+    };
+  };
+  return(sampleObjects);
+ }
+//--------------------------------------------------------------//
+
+
+
+//---------------------------------Function to Collect and Return sample data -  With number OTU ID's-----------------------------//
+
+function collectSampleDataNum(data, id) {
+  // Initialize empty arrays 
+  let sample_value = [];
+  let otu_id = [];
+  let otu_label = [];
+  let sampleObjects = [];
+
+  // Looping through data to find the id that matches
+  for (let i = 0; i < data.length; i++) {
+    if (data[i].id == id){
+
+      // store id's data in dedicated arrays
+      sample_value  = data[i].sample_values;
+      otu_id = data[i].otu_ids;
+      otu_label = data[i].otu_labels;
+
+      // Loop through the arrays and create objects for each iteration
+      for (let j = 0; j < sample_value.length; j++) {
+        sampleObjects[j] = {sample_values: sample_value[j], otu_ids: otu_id[j], otu_labels: otu_label[j]};
+      }
+    };
+  };
+  return(sampleObjects);
+ }
+//--------------------------------------------------------------//
 
   init();
