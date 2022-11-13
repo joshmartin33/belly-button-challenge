@@ -1,12 +1,6 @@
 // Get the samples.json endpoint
 const url = "https://2u-data-curriculum-team.s3.amazonaws.com/dataviz-classroom/v1.1/14-Interactive-Web-Visualizations/02-Homework/samples.json";
-const file = '../../data/samples.json'
 
-
-// (fetch('../../data/samples.json')
-//   .then(response => response.json())
-//   .then(data => ids(data.names))
-//   .catch(error => console.log(error)));
 
 //-----------------------------Function to populate the initial page---------------------------------//
 
@@ -16,6 +10,7 @@ function init() {
     ids(data.names);
     addBarChart(data.samples, data.names[0]);
     addBubbleChart(data.samples, data.names[0]);
+    addGauge(data.metadata, data.names[0]);
   });
 }
 //--------------------------------------------------------------//
@@ -47,6 +42,7 @@ let traceBar = {
     name: "Top 10 OTUs",
     type: "bar",
     orientation: "h",
+    marker:{color: "#A2165F"}
   };
 
 
@@ -76,8 +72,6 @@ function addBubbleChart(data, id) {
   // Collect sample data using id
   let sampleObjects = collectSampleDataNum(data, id);
 
-  console.log(sampleObjects)
-
   // Trace for the Sample Data
 let traceBubble = {
   type: "scatter",
@@ -97,7 +91,7 @@ let traceBubble = {
 
 let traceBubbleData = [traceBubble];
 
-// Apply a title to the layout
+// Apply a title and axis label to the layout
 let layout = {
 title: 'All OTUs Found in Individuals',
 xaxis: {title:'OTU ID'}
@@ -112,9 +106,17 @@ Plotly.newPlot("bubble", traceBubbleData, layout);
 //-----------------------------Function to populate the option list of Id's---------------------------------//
 
 function ids(data) {
+
+    // Iterate through all inputed data
     for (let i = 0; i < data.length; i++) {
+
+      // set variable to create option element
       let added = document.createElement('option');
+
+      // Set location of the new element as a variable
       let dataset = document.getElementById('selDataset');
+
+      // though each iteration grab the data and save as value and html and then append to the location
       added.value = data[i];
       added.innerHTML = data[i];
       dataset.append(added);
@@ -130,21 +132,15 @@ function ids(data) {
 
   let currentId = id
 
-  // Fetch the JSON data using url and run applicable functions                 Uncomment when going live
+  // Fetch the JSON data using url and run applicable functions          
     d3.json(url).then(function(data) {
     demoInfo(data.metadata, currentId);
     updateBarChart(data.samples, currentId);
-    updateBubbleChart(data.samples, currentId);});
+    updateBubbleChart(data.samples, currentId);
+    updateGauge(data.metadata, currentId);});
  };
 //--------------------------------------------------------------//
  
-
-
-  // // Fetch the Json data using samples.json         DELETE WHEN GOING LIVE
-  //   fetch('../../data/samples.json')
-  //   .then(response => response.json())
-  //   .then(data => demoInfo(data.metadata))
-  //   .catch(error => console.log(error));
 
 
 //-----------------------------Function to add demographic Info---------------------------------//
@@ -217,8 +213,7 @@ function updateBubbleChart(data, id) {
   let sampleObjects = collectSampleDataNum(data, id);
 
 
-  // Trace for the Sample Data
-
+// Set new values as variables
 let x = sampleObjects.map(object => object.otu_ids);
 let y = sampleObjects.map(object => object.sample_values);
 let text = sampleObjects.map(object => object.otu_labels);
@@ -228,8 +223,6 @@ let marker = {
   color: sampleObjects.map(object => object.otu_ids),
   colorscale: [[0, 'rgb(0, 0, 255)'], [0.5, 'rgb(0, 255, 0)'], [1, 'rgb(255, 0, 0)']]
 }  
-
-
 
 // Update/resyle bubble chart with new data
 Plotly.restyle("bubble", 'x', [x]);
@@ -297,6 +290,85 @@ function collectSampleDataNum(data, id) {
   };
   return(sampleObjects);
  }
+//--------------------------------------------------------------//
+
+
+
+//---------------------------------Bonus - create gauge chart -----------------------------//
+
+function addGauge(data, id) {
+
+  // Collect wash frequency value using data and id
+  let washFrequency = washFreq(data, id);
+
+  // set values for gauge chart
+  var data = [
+    {
+      domain: { x: [0, 1], y: [0, 1] },
+      value: washFrequency,
+      title: { text: "BellyButton Washing Frequency" },
+      type: "indicator",
+      mode: "gauge+number",
+      gauge: {
+        axis: { range: [null, 9],
+          tickmode: 'linear'},
+        bar: {color: "#A2165F"},
+        steps: [
+          {range: [0, 1], color: "#F6EFCC" },
+          { range: [1, 2], color: "#EFF0AB" },
+          { range: [2, 3], color: "#D6E88B" },
+          { range: [3, 4], color: "#B4E06C" },
+          { range: [4, 5], color: "#89D74D" },
+          { range: [5, 6], color: "#56CD2F" },
+          { range: [6, 7], color: "#1DC212" },
+          { range: [7, 8], color: "#0DAC25" },
+          { range: [8, 9], color: "#09963C" }
+        ],
+      }
+    }
+  ];
+  
+  // Set layout for gauge chart
+  var layout = { width: 600, height: 450, margin: { t: 0, b: 0 } };
+
+  // Plot gauge chart to gauge location
+  Plotly.newPlot('gauge', data, layout);
+}
+//--------------------------------------------------------------//
+
+
+
+//---------------------------------Bonus - update gauge chart -----------------------------//
+
+function updateGauge(data, id) {
+
+  // use function to get wash frequesncy value
+  let value = washFreq(data, id);
+
+// Update/resyle gauge chart with new data
+Plotly.restyle("gauge", 'value', [value]);
+}
+//--------------------------------------------------------------//
+
+
+
+//---------------------------------Bonus - function - Wash frequency -----------------------------//
+
+function washFreq(data, id){
+
+  // Reset freq to nothing
+  let freq = ""
+
+  // loop through data to find results that match the specified id
+  for (let i = 0; i < data.length; i++) {
+    if (data[i].id == id){
+
+      // set relevant data as variable
+      freq = data[i].wfreq;
+    };
+  };
+  return(freq);
+}
 //--------------------------------------------------------------//
 
   init();
